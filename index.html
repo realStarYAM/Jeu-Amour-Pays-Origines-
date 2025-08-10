@@ -254,6 +254,7 @@
           <button id="btnUpdate" class="btn-accent">Mettre à jour la carte</button>
           <button id="btnMsg">Générer un message mignon 💌</button>
           <button id="btnCopy">Copier le message</button>
+          <button id="btnDownload">Télécharger l'image</button>
         </div>
 
         <div id="scoreLine" class="score-line"></div>
@@ -325,6 +326,7 @@
      const btnCopy = $('#btnCopy');
      const scoreLine = $('#scoreLine');
      const out = $('#out');
+     const btnDownload = $('#btnDownload');
 
     const canvas = document.getElementById('map');
     const ctx = canvas.getContext('2d');
@@ -647,6 +649,238 @@
       scoreLine.innerHTML = `Distance: <strong>${formatKm(distanceKm)}</strong> · Compatibilité: <strong>${score}/100</strong> ${bonus !== 0 ? `(bonus ${bonus >= 0 ? '+' : ''}${bonus})` : ''}`;
     }
 
+    // --- Export helpers ---
+    function wrapTextToLines(context, text, maxWidth) {
+      const words = text.split(/\s+/);
+      const lines = [];
+      let current = '';
+      for (let i = 0; i < words.length; i++) {
+        const test = current ? current + ' ' + words[i] : words[i];
+        if (context.measureText(test).width <= maxWidth) {
+          current = test;
+        } else {
+          if (current) lines.push(current);
+          current = words[i];
+        }
+      }
+      if (current) lines.push(current);
+      return lines;
+    }
+
+    function drawRoundedRect(context, x, y, w, h, r) {
+      context.beginPath();
+      context.moveTo(x + r, y);
+      context.lineTo(x + w - r, y);
+      context.quadraticCurveTo(x + w, y, x + w, y + r);
+      context.lineTo(x + w, y + h - r);
+      context.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      context.lineTo(x + r, y + h);
+      context.quadraticCurveTo(x, y + h, x, y + h - r);
+      context.lineTo(x, y + r);
+      context.quadraticCurveTo(x, y, x + r, y);
+      context.closePath();
+    }
+
+    function loadImage(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+      });
+    }
+
+    async function composeExportImage() {
+      // Dimensions of the export image
+      const width = 1400;
+      const height = 900;
+      const margin = 28;
+      const rightPanelWidth = 460;
+      const gap = 20;
+
+      const off = document.createElement('canvas');
+      off.width = width;
+      off.height = height;
+      const c = off.getContext('2d');
+
+      // Background
+      const bg = c.createLinearGradient(0, 0, 0, height);
+      bg.addColorStop(0, '#0b1220');
+      bg.addColorStop(1, '#0a0f1e');
+      c.fillStyle = bg;
+      c.fillRect(0, 0, width, height);
+
+      // Title
+      c.fillStyle = '#e5e7eb';
+      c.font = '700 28px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto';
+      c.fillText('Amour à travers le monde — Export', margin, margin + 8);
+
+      // Subtle border panel
+      drawRoundedRect(c, margin, margin + 24, width - margin * 2, height - margin * 2 - 24, 14);
+      c.strokeStyle = 'rgba(148,163,184,0.18)';
+      c.lineWidth = 2;
+      c.stroke();
+
+      const h = getCountry(selectH.value);
+      const f = getCountry(selectF.value);
+      const { distanceKm, score } = computeCompatibility(h, f, `${nameH.value}|${nameF.value}`);
+
+      // Map snapshot on the left
+      const leftWidth = width - margin * 2 - rightPanelWidth - gap;
+      const mapSrcCanvas = canvas; // already painted map
+      const mapAspect = mapSrcCanvas.width / mapSrcCanvas.height;
+      const targetH = Math.min(height - margin * 2 - 80, Math.round(leftWidth / mapAspect));
+      const mapX = margin + 10;
+      const mapY = margin + 50;
+      drawRoundedRect(c, mapX - 10, mapY - 10, leftWidth + 20, targetH + 20, 12);
+      c.fillStyle = '#0b1220';
+      c.fill();
+      c.drawImage(mapSrcCanvas, mapX, mapY, leftWidth, targetH);
+
+      // Legend under the map
+      c.font = '12px ui-sans-serif, system-ui';
+      c.fillStyle = '#94a3b8';
+      const legendY = mapY + targetH + 18;
+      c.beginPath(); c.fillStyle = '#38bdf8'; c.arc(mapX + 6, legendY - 3, 5, 0, Math.PI*2); c.fill();
+      c.fillStyle = '#94a3b8'; c.fillText('Homme', mapX + 18, legendY);
+      c.beginPath(); c.fillStyle = '#f472b6'; c.arc(mapX + 80 + 6, legendY - 3, 5, 0, Math.PI*2); c.fill();
+      c.fillStyle = '#94a3b8'; c.fillText('Femme', mapX + 80 + 18, legendY);
+      c.fillText('Grille: 30° lat/lon', mapX + 160, legendY);
+
+      // Right info panel
+      const panelX = margin + leftWidth + gap;
+      const panelY = margin + 50;
+      const panelW = rightPanelWidth;
+      const panelH = height - panelY - margin;
+      drawRoundedRect(c, panelX, panelY, panelW, panelH, 12);
+      c.fillStyle = '#0b1220';
+      c.fill();
+      c.strokeStyle = 'rgba(148,163,184,0.18)';
+      c.stroke();
+
+      // Names + flags
+      c.fillStyle = '#e5e7eb';
+      c.font = '600 20px ui-sans-serif, system-ui';
+      const line1 = `${h.flag} ${nameH.value || 'Adam'}` + (selectedEmoji ? ` ${selectedEmoji}` : '');
+      const line2 = `${f.flag} ${nameF.value || 'Eva'}` + (selectedEmoji ? ` ${selectedEmoji}` : '');
+      c.fillText(line1, panelX + 16, panelY + 34);
+      c.fillText(line2, panelX + 16, panelY + 62);
+
+      // Stats pills
+      c.font = '14px ui-sans-serif, system-ui';
+      const pillY = panelY + 92;
+      function drawPill(text, x) {
+        const padX = 10, padY = 6, rad = 999;
+        const w = Math.ceil(c.measureText(text).width) + padX * 2;
+        drawRoundedRect(c, x, pillY - 16, w, 28, 14);
+        c.fillStyle = '#0b1220'; c.fill();
+        c.strokeStyle = 'rgba(148,163,184,0.18)'; c.stroke();
+        c.fillStyle = '#94a3b8'; c.fillText(text, x + padX, pillY);
+        return w + 8;
+      }
+      let nextX = panelX + 16;
+      nextX += drawPill(`Distance: ${formatKm(distanceKm)}`, nextX);
+      nextX += drawPill(`Score: ${score}/100`, nextX);
+
+      // Avatar circle if available
+      if (avatarDataUrl) {
+        try {
+          const img = await loadImage(avatarDataUrl);
+          const size = 96;
+          const ax = panelX + 16;
+          const ay = pillY + 24;
+          c.save();
+          c.beginPath();
+          c.arc(ax + size/2, ay + size/2, size/2, 0, Math.PI*2);
+          c.closePath();
+          c.clip();
+          c.drawImage(img, ax, ay, size, size);
+          c.restore();
+          // avatar border
+          c.strokeStyle = 'rgba(148,163,184,0.35)';
+          c.lineWidth = 2;
+          c.beginPath();
+          c.arc(ax + size/2, ay + size/2, size/2, 0, Math.PI*2);
+          c.stroke();
+        } catch (e) { /* ignore */ }
+      }
+
+      // Message block
+      const msgTitleY = panelY + 240;
+      c.fillStyle = '#e5e7eb';
+      c.font = '600 16px ui-sans-serif, system-ui';
+      c.fillText('Message', panelX + 16, msgTitleY);
+      const msgBoxX = panelX + 12;
+      const msgBoxY = msgTitleY + 10;
+      const msgBoxW = panelW - 24;
+      const msgBoxH = panelH - (msgBoxY - panelY) - 16;
+      drawRoundedRect(c, msgBoxX, msgBoxY, msgBoxW, msgBoxH, 10);
+      c.fillStyle = '#0a1020'; c.fill();
+      c.strokeStyle = 'rgba(148,163,184,0.15)'; c.stroke();
+
+      // Get message text (fallback generate if empty)
+      let messageText = (out && out.innerText ? out.innerText.trim() : '').trim();
+      if (!messageText) {
+        // Try generate one quickly
+        try { generateMessage(); messageText = (out && out.innerText ? out.innerText.trim() : '').trim(); } catch (e) {}
+      }
+
+      c.save();
+      c.beginPath();
+      c.rect(msgBoxX + 12, msgBoxY + 12, msgBoxW - 24, msgBoxH - 24);
+      c.clip();
+      c.fillStyle = '#e5e7eb';
+      c.font = '14px ui-sans-serif, system-ui, "Apple Color Emoji", "Segoe UI Emoji"';
+      const maxW = msgBoxW - 24;
+      const lines = [];
+      const paragraphs = (messageText || 'Le message apparaîtra ici.').split(/\n+/);
+      paragraphs.forEach(p => {
+        const wrapped = wrapTextToLines(c, p, maxW);
+        if (wrapped.length === 0) { lines.push(''); }
+        else { wrapped.forEach(w => lines.push(w)); }
+        lines.push('');
+      });
+      let ty = msgBoxY + 28;
+      const lh = 22;
+      for (let ln of lines) {
+        if (ty > msgBoxY + msgBoxH - 10) break;
+        c.fillText(ln, msgBoxX + 18, ty);
+        ty += lh;
+      }
+      c.restore();
+
+      // Footer timestamp
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const stamp = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      c.fillStyle = '#94a3b8';
+      c.font = '12px ui-sans-serif, system-ui';
+      c.fillText(`Généré le ${stamp}`, margin, height - 10);
+
+      return off.toDataURL('image/png');
+    }
+
+    async function downloadImage() {
+      try {
+        const dataUrl = await composeExportImage();
+        const a = document.createElement('a');
+        const h = getCountry(selectH.value);
+        const f = getCountry(selectF.value);
+        const nameA = (nameH.value || 'Adam').replace(/\s+/g, '_');
+        const nameB = (nameF.value || 'Eva').replace(/\s+/g, '_');
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        const fname = `amour_${nameA}_${nameB}_${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}.png`;
+        a.href = dataUrl;
+        a.download = fname;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch (e) {
+        alert('Échec de la génération de l\'image.');
+      }
+    }
+
     function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
     function generateMessage() {
@@ -715,6 +949,7 @@
     [selectH, selectF, nameH, nameF].forEach(el => el.addEventListener('change', drawAll));
     btnMsg.addEventListener('click', generateMessage);
     btnCopy.addEventListener('click', copyMessage);
+    if (btnDownload) btnDownload.addEventListener('click', downloadImage);
 
     // First paint
     drawAll();
