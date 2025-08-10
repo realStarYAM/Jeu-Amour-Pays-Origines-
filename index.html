@@ -167,6 +167,19 @@
     .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
     .dot.homme { background: var(--accent-2); box-shadow: 0 0 0 2px rgba(56,189,248,0.25); }
     .dot.femme { background: var(--accent); box-shadow: 0 0 0 2px rgba(244,114,182,0.25); }
+
+    .xp { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+    .xp-row { display:flex; gap:8px; align-items:center; flex-wrap: wrap; }
+    .xp-bar { width: 100%; height: 10px; background: #0b1220; border: 1px solid rgba(148,163,184,0.18); border-radius: 999px; overflow: hidden; }
+    .xp-fill { height: 100%; background: linear-gradient(90deg, #38bdf8, #f472b6); width: 0%; transition: width 0.3s ease; }
+
+    .profile-upload { display:flex; align-items:center; gap:10px; }
+    .avatar-preview { width: 44px; height: 44px; border-radius: 50%; border:1px solid rgba(148,163,184,0.18); object-fit: cover; background: #0b1220; }
+    .emoji-picker { display: flex; flex-wrap: wrap; gap: 6px; }
+    .emoji-btn { padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(148,163,184,0.18); background: #0b1220; cursor: pointer; font-size: 20px; }
+    .emoji-btn.selected { border-color: var(--accent-2); box-shadow: 0 0 0 2px rgba(56,189,248,0.2) inset; }
+
+    .out [dir="rtl"] { direction: rtl; text-align: right; }
   </style>
 </head>
 <body>
@@ -200,8 +213,41 @@
         </div>
 
         <div class="controls" style="margin-top: 6px;">
-          <label class="switch"><input id="darija" type="checkbox" /> Inclure une version en darija</label>
+          <div class="field" style="min-width:220px;">
+            <label for="langSelect">Langue du message</label>
+            <select id="langSelect" aria-label="Choisir la langue">
+              <option value="fr">Français</option>
+              <option value="darija_lat">Darija (latin)</option>
+              <option value="darija_ar">Darija (العربية)</option>
+              <option value="all">Tous</option>
+            </select>
+          </div>
+          <label class="switch"><input id="darija" type="checkbox" aria-label="Inclure darija (legacy)"/> Inclure une version en darija</label>
           <span class="pill">Conseil: tu peux zoomer avec deux doigts sur iPad</span>
+        </div>
+
+        <div class="xp" aria-live="polite">
+          <div class="xp-row">
+            <span class="pill" id="xpLabel">XP: 0</span>
+            <button id="btnResetXP" aria-describedby="xpLabel">Réinitialiser XP</button>
+          </div>
+          <div class="xp-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progression XP">
+            <div class="xp-fill" id="xpFill"></div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:8px;">
+          <div class="field">
+            <label>Photo de profil</label>
+            <div class="profile-upload">
+              <img id="avatarPreview" class="avatar-preview" alt="Aperçu photo" />
+              <input id="avatarInput" type="file" accept="image/*" aria-label="Télécharger une photo" />
+            </div>
+          </div>
+          <div class="field">
+            <label>Emoji préféré</label>
+            <div id="emojiPicker" class="emoji-picker" role="listbox" aria-label="Choisir un emoji"></div>
+          </div>
         </div>
 
         <div class="controls" style="margin-top: 12px;">
@@ -265,15 +311,133 @@
     const nameF = $('#nameF');
     const selectH = $('#countryH');
     const selectF = $('#countryF');
-    const checkboxDarija = $('#darija');
-    const btnUpdate = $('#btnUpdate');
-    const btnMsg = $('#btnMsg');
-    const btnCopy = $('#btnCopy');
-    const scoreLine = $('#scoreLine');
-    const out = $('#out');
+         const checkboxDarija = $('#darija');
+     const langSelect = $('#langSelect');
+     const avatarInput = $('#avatarInput');
+     const avatarPreview = $('#avatarPreview');
+     const emojiPicker = $('#emojiPicker');
+     const xpFill = $('#xpFill');
+     const xpLabel = $('#xpLabel');
+     const btnResetXP = $('#btnResetXP');
+
+     const btnUpdate = $('#btnUpdate');
+     const btnMsg = $('#btnMsg');
+     const btnCopy = $('#btnCopy');
+     const scoreLine = $('#scoreLine');
+     const out = $('#out');
 
     const canvas = document.getElementById('map');
     const ctx = canvas.getContext('2d');
+
+    // Persistent state
+    let xpTotal = 0;
+    let selectedEmoji = '';
+    let avatarDataUrl = '';
+
+    const EMOJI_OPTIONS = ['💖','💘','💝','💞','💕','💓','💗','💟','🥰','😍','😘','😊','✨','🌟','🌸','🌹','🎉','🔥'];
+
+    function saveState() {
+      try {
+        localStorage.setItem('xpTotal', String(xpTotal));
+        localStorage.setItem('selectedEmoji', selectedEmoji || '');
+        localStorage.setItem('avatarDataUrl', avatarDataUrl || '');
+        if (langSelect) localStorage.setItem('lang', langSelect.value);
+      } catch (e) { /* ignore */ }
+    }
+
+    function loadState() {
+      try {
+        xpTotal = parseInt(localStorage.getItem('xpTotal') || '0', 10);
+        selectedEmoji = localStorage.getItem('selectedEmoji') || '';
+        avatarDataUrl = localStorage.getItem('avatarDataUrl') || '';
+        const storedLang = localStorage.getItem('lang');
+        if (storedLang && langSelect) langSelect.value = storedLang;
+      } catch (e) { /* ignore */ }
+      updateXPUI();
+      if (avatarDataUrl && avatarPreview) avatarPreview.src = avatarDataUrl;
+    }
+
+    function updateXPUI() {
+      const level = Math.floor(xpTotal / 100);
+      const progress = xpTotal % 100;
+      if (xpFill) xpFill.style.width = `${progress}%`;
+      if (xpLabel) xpLabel.textContent = `XP: ${xpTotal} (Niv. ${level})`;
+      const bar = document.querySelector('.xp-bar');
+      if (bar) { bar.setAttribute('aria-valuenow', String(progress)); }
+    }
+
+    function addXP(points) {
+      xpTotal = Math.max(0, xpTotal + points);
+      updateXPUI();
+      saveState();
+    }
+
+    function resetXP() {
+      xpTotal = 0;
+      updateXPUI();
+      saveState();
+    }
+
+    function buildEmojiPicker() {
+      if (!emojiPicker) return;
+      emojiPicker.innerHTML = '';
+      EMOJI_OPTIONS.forEach(em => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'emoji-btn' + (selectedEmoji === em ? ' selected' : '');
+        btn.textContent = em;
+        btn.setAttribute('role', 'option');
+        btn.setAttribute('aria-selected', selectedEmoji === em ? 'true' : 'false');
+        btn.addEventListener('click', () => {
+          selectedEmoji = em;
+          [...emojiPicker.querySelectorAll('.emoji-btn')].forEach(b => { b.classList.remove('selected'); b.setAttribute('aria-selected', 'false'); });
+          btn.classList.add('selected');
+          btn.setAttribute('aria-selected', 'true');
+          saveState();
+          drawAll();
+        });
+        emojiPicker.appendChild(btn);
+      });
+    }
+
+    function handleAvatarInput(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        avatarDataUrl = String(reader.result || '');
+        if (avatarPreview) avatarPreview.src = avatarDataUrl;
+        saveState();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function composeMessages(params) {
+      const { h, f, distanceKm, score, nameA, nameB } = params;
+      const hearts = ['💞', '💖', '💗', '💘', '💝'];
+      const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+      const extra = selectedEmoji ? ` ${selectedEmoji}` : '';
+
+      const fr = [
+        `${nameA}${extra} (${h.flag} ${h.name}) et ${nameB}${extra} (${f.flag} ${f.name}) sont séparés par ${formatKm(distanceKm)}, mais leurs cœurs n’ont pas de frontières. Compatibilité: ${score}/100 ${pick(hearts)}`,
+        `Entre ${nameA}${extra} et ${nameB}${extra}, les destins se chuchotent doucement. ${h.flag}+${f.flag} → ${score}/100 ${pick(hearts)}`,
+        `${nameA}${extra} rencontre ${nameB}${extra} à mi-chemin du monde. Distance: ${formatKm(distanceKm)} · Score: ${score}/100 ${pick(hearts)}`,
+      ];
+
+      const dj_lat = [
+        `${nameA}${extra} w ${nameB}${extra} b3id bainathom ${formatKm(distanceKm)}, walakin l9loub ma 3and-homch hdoud. N9ta: ${score}/100 ${pick(hearts)}`,
+        `${nameA}${extra} w ${nameB}${extra} ktla9aw f nos d-dnya. L-b3d ghyr r9m, w l-hob kayrba7. N9ta: ${score}/100 ${pick(hearts)}`,
+        `Ben ${h.flag} w ${f.flag}, ${nameA}${extra} w ${nameB}${extra} kayqtarbo b l-hob. ${score}/100 ${pick(hearts)}`,
+      ];
+
+      const dj_ar = [
+        `${nameA}${extra} و ${nameB}${extra} بعيد بيناتهم ${formatKm(distanceKm)}، ولكن القلوب ما عندهاش حدود. النقطة: ${score}/100 ${pick(hearts)}`,
+        `${nameA}${extra} و ${nameB}${extra} تيلقاو ف نُصّ الدنيا. البعد غير رقم، والحب كيربح. النقطة: ${score}/100 ${pick(hearts)}`,
+        `بين ${h.flag} و ${f.flag}, ${nameA}${extra} و ${nameB}${extra} كيقربو بالقلب. ${score}/100 ${pick(hearts)}`,
+      ];
+
+      return { fr: pick(fr), darija_lat: pick(dj_lat), darija_ar: pick(dj_ar) };
+    }
 
     function populateSelects() {
       const options = COUNTRIES.map(c => `<option value="${c.code}">${c.flag} ${c.name}</option>`).join('');
@@ -474,8 +638,10 @@
       const pF = lonLatToXY(f.lon, f.lat);
 
       drawArc(pH, pF);
-      drawAvatar(pH, 'homme', nameH.value || 'Homme', h.flag);
-      drawAvatar(pF, 'femme', nameF.value || 'Femme', f.flag);
+      const labelH = (nameH.value || 'Homme') + (selectedEmoji ? ` ${selectedEmoji}` : '');
+      const labelF = (nameF.value || 'Femme') + (selectedEmoji ? ` ${selectedEmoji}` : '');
+      drawAvatar(pH, 'homme', labelH, h.flag);
+      drawAvatar(pF, 'femme', labelF, f.flag);
 
       const { distanceKm, score, bonus } = computeCompatibility(h, f, `${nameH.value}|${nameF.value}`);
       scoreLine.innerHTML = `Distance: <strong>${formatKm(distanceKm)}</strong> · Compatibilité: <strong>${score}/100</strong> ${bonus !== 0 ? `(bonus ${bonus >= 0 ? '+' : ''}${bonus})` : ''}`;
@@ -488,32 +654,36 @@
       const f = getCountry(selectF.value);
       const { distanceKm, score } = computeCompatibility(h, f, `${nameH.value}|${nameF.value}`);
 
-      const nouns = ['destins', 'étoiles', 'voyages', 'rêves', 'sourires', 'chansons', 'silences'];
-      const verbs = ['se cherchent', 'se trouvent', 'se répondent', 'se chuchotent', 'se reconnaissent'];
-      const adjs = ['doucement', 'fort', 'simplement', 'à l’infini', 'sans bruit'];
-      const hearts = ['💞', '💖', '💗', '💘', '💝'];
-
       const nameA = nameH.value || 'Adam';
       const nameB = nameF.value || 'Eva';
 
-      const baseFr = [
-        `${nameA} (${h.flag} ${h.name}) et ${nameB} (${f.flag} ${f.name}) sont séparés par ${formatKm(distanceKm)}, mais leurs cœurs n’ont pas de frontières. Compatibilité: ${score}/100 ${pick(hearts)}`,
-        `Entre ${nameA} et ${nameB}, les ${pick(nouns)} ${pick(verbs)} ${pick(adjs)}. ${h.flag}+${f.flag} → ${score}/100 ${pick(hearts)}`,
-        `${nameA} rencontre ${nameB} à mi-chemin du monde. Distance: ${formatKm(distanceKm)} · Score: ${score}/100 ${pick(hearts)}`,
-      ];
+      const messages = composeMessages({ h, f, distanceKm, score, nameA, nameB });
 
-      let msg = pick(baseFr);
-
-      if (checkboxDarija.checked) {
-        const baseDj = [
-          `${nameA} w ${nameB} b3id bainathom ${formatKm(distanceKm)}, walakin l9loub ma 3and-homch hdoud. N9ta: ${score}/100 ${pick(hearts)}`,
-          `${nameA} w ${nameB} ktla9aw f nos d-dnya. L-b3d ghyr r9m, w l-hob kayrba7. N9ta: ${score}/100 ${pick(hearts)}`,
-          `Ben ${h.flag} w ${f.flag}, ${nameA} w ${nameB} kayqtarbo b l-hob. ${score}/100 ${pick(hearts)}`,
-        ];
-        msg += `\n\n— Darija —\n` + pick(baseDj);
+      const choice = (langSelect && langSelect.value) ? langSelect.value : 'fr';
+      let html = '';
+      if (choice === 'fr') {
+        html = messages.fr;
+      } else if (choice === 'darija_lat') {
+        html = `— Darija —<br>${messages.darija_lat}`;
+      } else if (choice === 'darija_ar') {
+        html = `— الدارجة —<br><span dir="rtl">${messages.darija_ar}</span>`;
+      } else if (choice === 'all') {
+        html = `${messages.fr}
+<br><br>— Darija —<br>${messages.darija_lat}
+<br><br>— الدارجة —<br><span dir="rtl">${messages.darija_ar}</span>`;
+      }
+      // Legacy toggle: append darija (latin) if checked and not already showing all
+      if (checkboxDarija && checkboxDarija.checked && choice !== 'all' && choice !== 'darija_lat') {
+        html += `
+<br><br>— Darija —<br>${messages.darija_lat}`;
       }
 
-      out.textContent = msg;
+      out.innerHTML = html;
+
+      // XP gain: +5 per generation, +5 bonus if score > 85
+      let gain = 5;
+      if (score > 85) gain += 5;
+      addXP(gain);
     }
 
     function copyMessage() {
@@ -535,6 +705,11 @@
 
     // Init
     populateSelects();
+    loadState();
+    buildEmojiPicker();
+    if (avatarInput) avatarInput.addEventListener('change', handleAvatarInput);
+    if (btnResetXP) btnResetXP.addEventListener('click', resetXP);
+    if (langSelect) langSelect.addEventListener('change', () => { saveState(); generateMessage(); });
     window.addEventListener('resize', drawAll);
     btnUpdate.addEventListener('click', drawAll);
     [selectH, selectF, nameH, nameF].forEach(el => el.addEventListener('change', drawAll));
