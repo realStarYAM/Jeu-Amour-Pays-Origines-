@@ -6,15 +6,15 @@
   <title>Amour à travers le monde — Jeu simple</title>
   <style>
     :root {
-      --bg: #0f172a;            /* slate-900 */
-      --panel: #111827;         /* gray-900 */
-      --muted: #94a3b8;         /* slate-400 */
-      --ink: #e5e7eb;           /* gray-200 */
-      --accent: #f472b6;        /* pink-400 */
-      --accent-2: #38bdf8;      /* sky-400 */
-      --good: #34d399;          /* emerald-400 */
-      --warn: #fbbf24;          /* amber-400 */
-      --bad: #fb7185;           /* rose-400 */
+      --bg: #0f172a;
+      --panel: #111827;
+      --muted: #94a3b8;
+      --ink: #e5e7eb;
+      --accent: #f472b6;
+      --accent-2: #38bdf8;
+      --good: #34d399;
+      --warn: #fbbf24;
+      --bad: #fb7185;
     }
 
     * { box-sizing: border-box; }
@@ -27,27 +27,10 @@
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Ubuntu, Cantarell, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
     }
 
-    .wrap {
-      max-width: 980px;
-      margin: 24px auto;
-      padding: 0 16px 48px;
-    }
+    .wrap { max-width: 980px; margin: 24px auto; padding: 0 16px 48px; }
 
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    header h1 {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: 0.2px;
-      margin: 0;
-    }
-
+    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    header h1 { font-size: 22px; font-weight: 700; letter-spacing: 0.2px; margin: 0; }
     header .hint { color: var(--muted); font-size: 13px; }
 
     .panel {
@@ -58,29 +41,15 @@
       padding: 14px;
     }
 
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    @media (min-width: 880px) { .grid { grid-template-columns: 1.1fr 1fr; } }
 
-    @media (min-width: 880px) {
-      .grid {
-        grid-template-columns: 1.1fr 1fr;
-      }
-    }
-
-    .row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
 
     .field { display: flex; flex-direction: column; gap: 6px; }
     label { font-size: 12px; color: var(--muted); }
 
-    input[type="text"], select {
+    input[type="text"], select, input[type="file"] {
       width: 100%;
       padding: 10px 12px;
       border-radius: 10px;
@@ -92,6 +61,7 @@
       font-size: 14px;
     }
 
+    input[type="file"] { padding: 8px; }
     input[type="text"]:focus, select:focus { border-color: var(--accent-2); }
 
     .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -118,55 +88,39 @@
     .note { font-size: 13px; color: var(--muted); }
 
     .canvas-wrap {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 2 / 1; /* world aspect */
-      border-radius: 12px;
-      overflow: hidden;
+      position: relative; width: 100%; aspect-ratio: 2 / 1; border-radius: 12px; overflow: hidden;
       border: 1px solid rgba(148,163,184,0.18);
       background: linear-gradient(180deg, #0b1220 0%, #0a1020 100%);
     }
 
     canvas { width: 100%; height: 100%; display: block; }
 
-    .score-line {
-      margin-top: 10px;
-      font-size: 14px;
-    }
-
+    .score-line { margin-top: 10px; font-size: 14px; }
     .score-line strong { color: var(--good); }
 
-    .out {
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid rgba(148,163,184,0.18);
-      background: #0b1220;
-      min-height: 64px;
-      white-space: pre-wrap;
-    }
+    .out { padding: 12px; border-radius: 10px; border: 1px solid rgba(148,163,184,0.18); background: #0b1220; min-height: 64px; white-space: pre-wrap; unicode-bidi: plaintext; }
 
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.18);
-      background: #0b1220;
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .switch {
-      display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; color: var(--muted);
-    }
-    .switch input { width: 18px; height: 18px; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(148,163,184,0.18); background: #0b1220; color: var(--muted); font-size: 12px; }
 
     .legend { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; color: var(--muted); font-size: 12px; margin-top: 8px; }
     .legend .key { display: inline-flex; align-items: center; gap: 6px; }
     .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
     .dot.homme { background: var(--accent-2); box-shadow: 0 0 0 2px rgba(56,189,248,0.25); }
     .dot.femme { background: var(--accent); box-shadow: 0 0 0 2px rgba(244,114,182,0.25); }
+
+    .xp { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+    .xp-top { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--muted); }
+    .xp-bar { height: 10px; background: #0a1220; border: 1px solid rgba(148,163,184,0.18); border-radius: 999px; overflow: hidden; }
+    .xp-bar > div { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-2), var(--accent)); }
+
+    .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .profile { display: grid; grid-template-columns: 1fr; gap: 8px; }
+    .emoji-row { display: flex; gap: 6px; flex-wrap: wrap; }
+    .emoji-input { width: 72px; text-align: center; font-size: 18px; }
+    .emoji-chip { padding: 6px 8px; border-radius: 10px; border: 1px solid rgba(148,163,184,0.18); background: #0b1220; cursor: pointer; font-size: 16px; }
+
+    .preview { display: flex; align-items: center; gap: 8px; }
+    .preview img { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; border: 1px solid rgba(148,163,184,0.18); }
   </style>
 </head>
 <body>
@@ -180,27 +134,80 @@
       <section class="panel">
         <div class="row">
           <div class="field">
-            <label>Nom (homme)</label>
+            <label for="nameH">Nom (homme)</label>
             <input id="nameH" type="text" placeholder="Adam" value="Adam" />
           </div>
           <div class="field">
-            <label>Pays (homme)</label>
+            <label for="countryH">Pays (homme)</label>
             <select id="countryH"></select>
           </div>
         </div>
         <div class="row">
           <div class="field">
-            <label>Nom (femme)</label>
+            <label for="nameF">Nom (femme)</label>
             <input id="nameF" type="text" placeholder="Eva" value="Eva" />
           </div>
           <div class="field">
-            <label>Pays (femme)</label>
+            <label for="countryF">Pays (femme)</label>
             <select id="countryF"></select>
           </div>
         </div>
 
+        <div class="profile-grid">
+          <div class="profile">
+            <div class="field">
+              <label>Emoji (homme)</label>
+              <div class="emoji-row">
+                <input id="emojiH" class="emoji-input" type="text" value="👨" aria-label="Emoji homme" />
+                <button class="emoji-chip" data-target="emojiH">😍</button>
+                <button class="emoji-chip" data-target="emojiH">🔥</button>
+                <button class="emoji-chip" data-target="emojiH">🌹</button>
+                <button class="emoji-chip" data-target="emojiH">⭐</button>
+                <button class="emoji-chip" data-target="emojiH">👑</button>
+                <button class="emoji-chip" data-target="emojiH">🥰</button>
+              </div>
+            </div>
+            <div class="field">
+              <label>Photo (homme)</label>
+              <div class="preview">
+                <input id="photoH" type="file" accept="image/*" aria-label="Photo homme" />
+                <img id="previewH" alt="Aperçu homme" />
+              </div>
+            </div>
+          </div>
+          <div class="profile">
+            <div class="field">
+              <label>Emoji (femme)</label>
+              <div class="emoji-row">
+                <input id="emojiF" class="emoji-input" type="text" value="👩" aria-label="Emoji femme" />
+                <button class="emoji-chip" data-target="emojiF">😍</button>
+                <button class="emoji-chip" data-target="emojiF">✨</button>
+                <button class="emoji-chip" data-target="emojiF">🌸</button>
+                <button class="emoji-chip" data-target="emojiF">💫</button>
+                <button class="emoji-chip" data-target="emojiF">👑</button>
+                <button class="emoji-chip" data-target="emojiF">🥰</button>
+              </div>
+            </div>
+            <div class="field">
+              <label>Photo (femme)</label>
+              <div class="preview">
+                <input id="photoF" type="file" accept="image/*" aria-label="Photo femme" />
+                <img id="previewF" alt="Aperçu femme" />
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="controls" style="margin-top: 6px;">
-          <label class="switch"><input id="darija" type="checkbox" /> Inclure une version en darija</label>
+          <div class="field" style="min-width: 220px;">
+            <label for="language">Langue du message</label>
+            <select id="language" aria-label="Langue du message">
+              <option value="fr">Français</option>
+              <option value="darija_lat">Darija (latin)</option>
+              <option value="darija_ar">Darija (العربية)</option>
+              <option value="all">Tous</option>
+            </select>
+          </div>
           <span class="pill">Conseil: tu peux zoomer avec deux doigts sur iPad</span>
         </div>
 
@@ -211,6 +218,14 @@
         </div>
 
         <div id="scoreLine" class="score-line"></div>
+
+        <div class="xp">
+          <div class="xp-top">
+            <span>XP: <strong id="xpValue">0</strong> · Niveau <strong id="levelValue">0</strong></span>
+            <span id="xpHint" class="hint">+5 par message, +5 bonus si score &gt; 85</span>
+          </div>
+          <div class="xp-bar" aria-label="Progression XP"><div id="xpBarInner"></div></div>
+        </div>
       </section>
 
       <section class="panel">
@@ -226,7 +241,7 @@
     </div>
 
     <section class="panel" style="margin-top: 12px;">
-      <div id="out" class="out">Le message apparaîtra ici.</div>
+      <div id="out" class="out" dir="auto">Le message apparaîtra ici.</div>
     </section>
   </div>
 
@@ -265,23 +280,57 @@
     const nameF = $('#nameF');
     const selectH = $('#countryH');
     const selectF = $('#countryF');
-    const checkboxDarija = $('#darija');
+    const emojiHInput = $('#emojiH');
+    const emojiFInput = $('#emojiF');
+    const photoHInput = $('#photoH');
+    const photoFInput = $('#photoF');
+    const previewH = $('#previewH');
+    const previewF = $('#previewF');
+    const languageSelect = $('#language');
+
     const btnUpdate = $('#btnUpdate');
     const btnMsg = $('#btnMsg');
     const btnCopy = $('#btnCopy');
     const scoreLine = $('#scoreLine');
     const out = $('#out');
 
+    const xpValue = $('#xpValue');
+    const levelValue = $('#levelValue');
+    const xpBarInner = $('#xpBarInner');
+
     const canvas = document.getElementById('map');
     const ctx = canvas.getContext('2d');
+
+    const LS_KEY = 'loveGameStateV1';
+    let state = {
+      xp: 0,
+      emojiH: '👨',
+      emojiF: '👩',
+      photoH: null,
+      photoF: null,
+      language: 'fr'
+    };
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(LS_KEY);
+        if (raw) {
+          const saved = JSON.parse(raw);
+          state = { ...state, ...saved };
+        }
+      } catch {}
+    }
+
+    function saveState() {
+      try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch {}
+    }
 
     function populateSelects() {
       const options = COUNTRIES.map(c => `<option value="${c.code}">${c.flag} ${c.name}</option>`).join('');
       selectH.innerHTML = options;
       selectF.innerHTML = options;
-      // Defaults
-      selectH.value = 'FR';
-      selectF.value = 'MA';
+      selectH.value = state.selectH || 'FR';
+      selectF.value = state.selectF || 'MA';
     }
 
     function getCountry(code) { return COUNTRIES.find(c => c.code === code); }
@@ -289,7 +338,7 @@
     function resizeCanvasToContainer() {
       const parent = canvas.parentElement;
       const cssWidth = parent.clientWidth;
-      const cssHeight = cssWidth / 2; // 2:1 aspect
+      const cssHeight = cssWidth / 2;
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       canvas.style.width = cssWidth + 'px';
       canvas.style.height = cssHeight + 'px';
@@ -299,249 +348,200 @@
     }
 
     function lonLatToXY(lon, lat) {
-      // Equirectangular projection
-      const w = canvas.clientWidth;
-      const h = canvas.clientHeight;
-      const x = (lon + 180) / 360 * w;
-      const y = (90 - lat) / 180 * h;
-      return { x, y };
+      const w = canvas.clientWidth; const h = canvas.clientHeight;
+      const x = (lon + 180) / 360 * w; const y = (90 - lat) / 180 * h; return { x, y };
     }
 
     function drawBackground() {
-      const w = canvas.clientWidth;
-      const h = canvas.clientHeight;
-      // Ocean background
-      const grad = ctx.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0, '#0a1a2f');
-      grad.addColorStop(1, '#071426');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, w, h);
-
-      // Subtle stars
-      ctx.save();
-      ctx.globalAlpha = 0.25;
-      ctx.fillStyle = '#94a3b8';
-      for (let i = 0; i < 80; i++) {
-        const x = Math.random() * w;
-        const y = Math.random() * h;
-        const r = Math.random() * 0.8 + 0.2;
-        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
-      }
+      const w = canvas.clientWidth; const h = canvas.clientHeight;
+      const grad = ctx.createLinearGradient(0, 0, 0, h); grad.addColorStop(0, '#0a1a2f'); grad.addColorStop(1, '#071426');
+      ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+      ctx.save(); ctx.globalAlpha = 0.25; ctx.fillStyle = '#94a3b8';
+      for (let i = 0; i < 80; i++) { const x = Math.random() * w; const y = Math.random() * h; const r = Math.random() * 0.8 + 0.2; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); }
       ctx.restore();
-
-      // Graticule every 30°
-      ctx.save();
-      ctx.strokeStyle = 'rgba(148,163,184,0.22)';
-      ctx.lineWidth = 1;
-      for (let lon = -180; lon <= 180; lon += 30) {
-        const { x } = lonLatToXY(lon, 0);
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, h);
-        ctx.stroke();
-      }
-      for (let lat = -90; lat <= 90; lat += 30) {
-        const { y } = lonLatToXY(0, lat);
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(w, y);
-        ctx.stroke();
-      }
-      // Equator & Greenwich
-      ctx.strokeStyle = 'rgba(56,189,248,0.45)';
-      ctx.lineWidth = 1.5;
-      let p = lonLatToXY(0, 0); ctx.beginPath(); ctx.moveTo(0, p.y); ctx.lineTo(w, p.y); ctx.stroke();
-      p = lonLatToXY(0, 0); ctx.beginPath(); ctx.moveTo(p.x, 0); ctx.lineTo(p.x, h); ctx.stroke();
-      ctx.restore();
-
-      // Soft vignette
+      ctx.save(); ctx.strokeStyle = 'rgba(148,163,184,0.22)'; ctx.lineWidth = 1;
+      for (let lon = -180; lon <= 180; lon += 30) { const { x } = lonLatToXY(lon, 0); ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+      for (let lat = -90; lat <= 90; lat += 30) { const { y } = lonLatToXY(0, lat); ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+      ctx.strokeStyle = 'rgba(56,189,248,0.45)'; ctx.lineWidth = 1.5; let p = lonLatToXY(0, 0); ctx.beginPath(); ctx.moveTo(0, p.y); ctx.lineTo(w, p.y); ctx.stroke(); p = lonLatToXY(0, 0); ctx.beginPath(); ctx.moveTo(p.x, 0); ctx.lineTo(p.x, h); ctx.stroke(); ctx.restore();
       const g2 = ctx.createRadialGradient(w * 0.5, h * 0.5, Math.min(w, h) * 0.2, w * 0.5, h * 0.5, Math.max(w, h) * 0.7);
-      g2.addColorStop(0, 'rgba(0,0,0,0)');
-      g2.addColorStop(1, 'rgba(0,0,0,0.33)');
-      ctx.fillStyle = g2;
-      ctx.fillRect(0, 0, w, h);
+      g2.addColorStop(0, 'rgba(0,0,0,0)'); g2.addColorStop(1, 'rgba(0,0,0,0.33)'); ctx.fillStyle = g2; ctx.fillRect(0, 0, w, h);
     }
 
-    function drawAvatar(point, type, label, flag) {
+    function drawAvatar(point, type, label, flag, emoji, hasPhoto) {
       const isHomme = type === 'homme';
       const color = isHomme ? '#38bdf8' : '#f472b6';
       const bg = isHomme ? 'rgba(56,189,248,0.15)' : 'rgba(244,114,182,0.15)';
-      const emoji = isHomme ? '👨' : '👩';
       const r = 18;
-
-      // Glow
-      ctx.save();
-      ctx.fillStyle = bg;
-      ctx.beginPath(); ctx.arc(point.x, point.y, r + 10, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-
-      // Dot
-      ctx.beginPath();
-      ctx.fillStyle = color;
-      ctx.arc(point.x, point.y, 6, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Emoji label
+      ctx.save(); ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(point.x, point.y, r + 10, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      ctx.beginPath(); ctx.fillStyle = color; ctx.arc(point.x, point.y, 6, 0, Math.PI * 2); ctx.fill();
+      const cam = hasPhoto ? ' 📷' : '';
       ctx.font = '20px system-ui, Apple Color Emoji, Segoe UI Emoji';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#e5e7eb';
-      ctx.fillText(`${emoji} ${label} ${flag}`, point.x + 10, point.y);
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#e5e7eb';
+      ctx.fillText(`${emoji} ${label} ${flag}${cam} `, point.x + 10, point.y);
     }
 
     function drawArc(a, b) {
-      // Curved connection
-      const midX = (a.x + b.x) / 2;
-      const midY = (a.y + b.y) / 2;
-      const dx = b.x - a.x;
-      const dy = b.y - a.y;
-      const dist = Math.hypot(dx, dy);
-      const nx = -dy / (dist || 1);
-      const ny = dx / (dist || 1);
-      const bulge = Math.min(140, 20 + dist * 0.15);
-      const cx = midX + nx * bulge;
-      const cy = midY + ny * bulge;
-
-      const grad = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
-      grad.addColorStop(0, 'rgba(56,189,248,0.9)');
-      grad.addColorStop(1, 'rgba(244,114,182,0.9)');
-
-      ctx.save();
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = grad;
-      ctx.beginPath();
-      ctx.moveTo(a.x, a.y);
-      ctx.quadraticCurveTo(cx, cy, b.x, b.y);
-      ctx.stroke();
-
-      // Hearts along the path
-      ctx.font = '18px system-ui, Apple Color Emoji, Segoe UI Emoji';
-      ctx.fillStyle = '#fda4af';
-      for (let t of [0.25, 0.5, 0.75]) {
-        const x = (1 - t) * (1 - t) * a.x + 2 * (1 - t) * t * cx + t * t * b.x;
-        const y = (1 - t) * (1 - t) * a.y + 2 * (1 - t) * t * cy + t * t * b.y;
-        ctx.fillText('❤', x - 8, y - 8);
-      }
+      const midX = (a.x + b.x) / 2; const midY = (a.y + b.y) / 2; const dx = b.x - a.x; const dy = b.y - a.y; const dist = Math.hypot(dx, dy);
+      const nx = -dy / (dist || 1); const ny = dx / (dist || 1); const bulge = Math.min(140, 20 + dist * 0.15);
+      const cx = midX + nx * bulge; const cy = midY + ny * bulge;
+      const grad = ctx.createLinearGradient(a.x, a.y, b.x, b.y); grad.addColorStop(0, 'rgba(56,189,248,0.9)'); grad.addColorStop(1, 'rgba(244,114,182,0.9)');
+      ctx.save(); ctx.lineWidth = 3; ctx.strokeStyle = grad; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.quadraticCurveTo(cx, cy, b.x, b.y); ctx.stroke();
+      ctx.font = '18px system-ui, Apple Color Emoji, Segoe UI Emoji'; ctx.fillStyle = '#fda4af';
+      for (let t of [0.25, 0.5, 0.75]) { const x = (1 - t) * (1 - t) * a.x + 2 * (1 - t) * t * cx + t * t * b.x; const y = (1 - t) * (1 - t) * a.y + 2 * (1 - t) * t * cy + t * t * b.y; ctx.fillText('❤', x - 8, y - 8); }
       ctx.restore();
     }
 
-    // Haversine distance in km
     function haversineKm(lat1, lon1, lat2, lon2) {
-      const R = 6371;
-      const toRad = (d) => d * Math.PI / 180;
-      const dLat = toRad(lat2 - lat1);
-      const dLon = toRad(lon2 - lon1);
-      const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c;
+      const R = 6371; const toRad = (d) => d * Math.PI / 180; const dLat = toRad(lat2 - lat1); const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2; const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); return R * c;
     }
 
     function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
-    function seededNoise(str) {
-      // Simple deterministic pseudo-random based on string
-      let h = 2166136261 >>> 0;
-      for (let i = 0; i < str.length; i++) {
-        h ^= str.charCodeAt(i);
-        h = Math.imul(h, 16777619);
-      }
-      // Map to [-1, 1]
-      return (h % 2000) / 1000 - 1;
-    }
+    function seededNoise(str) { let h = 2166136261 >>> 0; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h % 2000) / 1000 - 1; }
 
     function computeCompatibility(a, b, namesKey) {
       const distanceKm = haversineKm(a.lat, a.lon, b.lat, b.lon);
-      let base = 100 - (distanceKm / 200); // -1 per 200 km
-      let bonus = 0;
-      if (a.francophone && b.francophone) bonus += 10;
-      if (a.continent === b.continent) bonus += 5;
-      bonus += seededNoise(namesKey) * 5; // ±5 stable by names
+      let base = 100 - (distanceKm / 200);
+      let bonus = 0; if (a.francophone && b.francophone) bonus += 10; if (a.continent === b.continent) bonus += 5; bonus += seededNoise(namesKey) * 5;
       const score = Math.round(clamp(base + bonus, 5, 99));
       return { distanceKm, score, bonus: Math.round(bonus) };
     }
 
-    function formatKm(km) {
-      return km < 1000 ? `${Math.round(km)} km` : `${(km/1000).toFixed(1)}k km`;
-    }
+    function formatKm(km) { return km < 1000 ? `${Math.round(km)} km` : `${(km/1000).toFixed(1)}k km`; }
 
     function drawAll() {
       resizeCanvasToContainer();
       drawBackground();
-
-      const h = getCountry(selectH.value);
-      const f = getCountry(selectF.value);
-      const pH = lonLatToXY(h.lon, h.lat);
-      const pF = lonLatToXY(f.lon, f.lat);
-
+      const h = getCountry(selectH.value); const f = getCountry(selectF.value);
+      const pH = lonLatToXY(h.lon, h.lat); const pF = lonLatToXY(f.lon, f.lat);
       drawArc(pH, pF);
-      drawAvatar(pH, 'homme', nameH.value || 'Homme', h.flag);
-      drawAvatar(pF, 'femme', nameF.value || 'Femme', f.flag);
-
+      drawAvatar(pH, 'homme', nameH.value || 'Homme', h.flag, state.emojiH || '👨', !!state.photoH);
+      drawAvatar(pF, 'femme', nameF.value || 'Femme', f.flag, state.emojiF || '👩', !!state.photoF);
       const { distanceKm, score, bonus } = computeCompatibility(h, f, `${nameH.value}|${nameF.value}`);
       scoreLine.innerHTML = `Distance: <strong>${formatKm(distanceKm)}</strong> · Compatibilité: <strong>${score}/100</strong> ${bonus !== 0 ? `(bonus ${bonus >= 0 ? '+' : ''}${bonus})` : ''}`;
     }
 
     function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
-    function generateMessage() {
-      const h = getCountry(selectH.value);
-      const f = getCountry(selectF.value);
+    function composeMessages(lang) {
+      const h = getCountry(selectH.value); const f = getCountry(selectF.value);
       const { distanceKm, score } = computeCompatibility(h, f, `${nameH.value}|${nameF.value}`);
+      const hearts = ['💞', '💖', '💗', '💘', '💝'];
+      const nameA = nameH.value || 'Adam'; const nameB = nameF.value || 'Eva';
 
       const nouns = ['destins', 'étoiles', 'voyages', 'rêves', 'sourires', 'chansons', 'silences'];
       const verbs = ['se cherchent', 'se trouvent', 'se répondent', 'se chuchotent', 'se reconnaissent'];
       const adjs = ['doucement', 'fort', 'simplement', 'à l’infini', 'sans bruit'];
-      const hearts = ['💞', '💖', '💗', '💘', '💝'];
 
-      const nameA = nameH.value || 'Adam';
-      const nameB = nameF.value || 'Eva';
-
-      const baseFr = [
+      const fr = [
         `${nameA} (${h.flag} ${h.name}) et ${nameB} (${f.flag} ${f.name}) sont séparés par ${formatKm(distanceKm)}, mais leurs cœurs n’ont pas de frontières. Compatibilité: ${score}/100 ${pick(hearts)}`,
         `Entre ${nameA} et ${nameB}, les ${pick(nouns)} ${pick(verbs)} ${pick(adjs)}. ${h.flag}+${f.flag} → ${score}/100 ${pick(hearts)}`,
         `${nameA} rencontre ${nameB} à mi-chemin du monde. Distance: ${formatKm(distanceKm)} · Score: ${score}/100 ${pick(hearts)}`,
       ];
 
-      let msg = pick(baseFr);
+      const dj = [
+        `${nameA} w ${nameB} b3id bainathom ${formatKm(distanceKm)}, walakin l9loub ma 3and-homch hdoud. N9ta: ${score}/100 ${pick(hearts)}`,
+        `${nameA} w ${nameB} ktla9aw f nos d-dnya. L-b3d ghyr r9m, w l-hob kayrba7. N9ta: ${score}/100 ${pick(hearts)}`,
+        `Ben ${h.flag} w ${f.flag}, ${nameA} w ${nameB} kayqtarbo b l-hob. ${score}/100 ${pick(hearts)}`,
+      ];
 
-      if (checkboxDarija.checked) {
-        const baseDj = [
-          `${nameA} w ${nameB} b3id bainathom ${formatKm(distanceKm)}, walakin l9loub ma 3and-homch hdoud. N9ta: ${score}/100 ${pick(hearts)}`,
-          `${nameA} w ${nameB} ktla9aw f nos d-dnya. L-b3d ghyr r9m, w l-hob kayrba7. N9ta: ${score}/100 ${pick(hearts)}`,
-          `Ben ${h.flag} w ${f.flag}, ${nameA} w ${nameB} kayqtarbo b l-hob. ${score}/100 ${pick(hearts)}`,
-        ];
-        msg += `\n\n— Darija —\n` + pick(baseDj);
-      }
+      const dj_ar = [
+        `${nameA} و ${nameB} بعيد بيناتهم ${formatKm(distanceKm)}، ولكن القلوب ما عندهاش حدود. النقطة: ${score}/100 ${pick(hearts)}`,
+        `${nameA} و ${nameB} كتلاقاو ف نص الدنيا. البعد غير رقم، و الحب كيربح. النقطة: ${score}/100 ${pick(hearts)}`,
+        `بين ${h.flag} و ${f.flag}، ${nameA} و ${nameB} كيقربو بِالحب. ${score}/100 ${pick(hearts)}`,
+      ];
 
+      if (lang === 'fr') return pick(fr);
+      if (lang === 'darija_lat') return pick(dj);
+      if (lang === 'darija_ar') return pick(dj_ar);
+      // all
+      return `Français:\n${pick(fr)}\n\nDarija (latin):\n${pick(dj)}\n\nDarija (العربية):\n${pick(dj_ar)}`;
+    }
+
+    function generateMessage() {
+      const msg = composeMessages(state.language || 'fr');
       out.textContent = msg;
+      awardXP();
+    }
+
+    function awardXP() {
+      const h = getCountry(selectH.value); const f = getCountry(selectF.value);
+      const { score } = computeCompatibility(h, f, `${nameH.value}|${nameF.value}`);
+      let gained = 5; if (score > 85) gained += 5; // base + bonus
+      state.xp = (state.xp || 0) + gained;
+      saveState();
+      updateXPUI();
+    }
+
+    function updateXPUI() {
+      const xp = state.xp || 0; const level = Math.floor(xp / 100); const prog = xp % 100;
+      xpValue.textContent = xp.toString(); levelValue.textContent = level.toString(); xpBarInner.style.width = `${prog}%`;
     }
 
     function copyMessage() {
-      const text = out.textContent.trim();
-      if (!text) return;
+      const text = out.textContent.trim(); if (!text) return;
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(() => {
-          out.textContent = text + "\n\n(Copié dans le presse-papiers ✅)";
-        }).catch(() => fallbackCopy(text));
+        navigator.clipboard.writeText(text).then(() => { out.textContent = text + "\n\n(Copié dans le presse-papiers ✅)"; }).catch(() => fallbackCopy(text));
       } else { fallbackCopy(text); }
+      function fallbackCopy(t) { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (e) {} document.body.removeChild(ta); }
+    }
 
-      function fallbackCopy(t) {
-        const ta = document.createElement('textarea');
-        ta.value = t; document.body.appendChild(ta); ta.select();
-        try { document.execCommand('copy'); } catch (e) {}
-        document.body.removeChild(ta);
-      }
+    function bindEmojiChips() {
+      document.querySelectorAll('.emoji-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const targetId = btn.getAttribute('data-target');
+          const input = document.getElementById(targetId);
+          input.value = btn.textContent.trim();
+          if (targetId === 'emojiH') { state.emojiH = input.value; } else { state.emojiF = input.value; }
+          saveState(); drawAll();
+        });
+      });
+    }
+
+    function handlePhotoInput(inputEl, previewEl, key) {
+      const file = inputEl.files && inputEl.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result;
+        previewEl.src = dataUrl;
+        state[key] = dataUrl;
+        saveState();
+        drawAll();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function restoreUIFromState() {
+      if (state.emojiH) emojiHInput.value = state.emojiH; if (state.emojiF) emojiFInput.value = state.emojiF;
+      if (state.photoH) previewH.src = state.photoH; if (state.photoF) previewF.src = state.photoF;
+      if (state.language) languageSelect.value = state.language;
+      updateXPUI();
     }
 
     // Init
+    loadState();
     populateSelects();
+    restoreUIFromState();
+
     window.addEventListener('resize', drawAll);
     btnUpdate.addEventListener('click', drawAll);
-    [selectH, selectF, nameH, nameF].forEach(el => el.addEventListener('change', drawAll));
+
+    [selectH, selectF, nameH, nameF].forEach(el => el.addEventListener('change', () => { state.selectH = selectH.value; state.selectF = selectF.value; saveState(); drawAll(); }));
+
+    emojiHInput.addEventListener('input', () => { state.emojiH = emojiHInput.value || '👨'; saveState(); drawAll(); });
+    emojiFInput.addEventListener('input', () => { state.emojiF = emojiFInput.value || '👩'; saveState(); drawAll(); });
+    bindEmojiChips();
+
+    photoHInput.addEventListener('change', () => handlePhotoInput(photoHInput, previewH, 'photoH'));
+    photoFInput.addEventListener('change', () => handlePhotoInput(photoFInput, previewF, 'photoF'));
+
+    languageSelect.addEventListener('change', () => { state.language = languageSelect.value; saveState(); });
+
     btnMsg.addEventListener('click', generateMessage);
     btnCopy.addEventListener('click', copyMessage);
 
-    // First paint
     drawAll();
   </script>
 </body>
