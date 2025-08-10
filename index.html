@@ -326,7 +326,11 @@
      const btnCopy = $('#btnCopy');
      const scoreLine = $('#scoreLine');
      const out = $('#out');
-     const btnDownload = $('#btnDownload');
+           const btnDownload = $('#btnDownload');
+
+      // Gemini proxy endpoint and demo key (not persisted)
+      const PROXY_GEMINI_URL = '/api/gemini/generate-romance';
+      let DEMO_GEMINI_API_KEY = null;
 
     const canvas = document.getElementById('map');
     const ctx = canvas.getContext('2d');
@@ -883,7 +887,64 @@
 
     function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
-    function generateMessage() {
+    async function generateViaProxy({ h, f, distanceKm, score, nameA, nameB }) {
+      const body = {
+        h: { code: h.code, name: h.name, flag: h.flag },
+        f: { code: f.code, name: f.name, flag: f.flag },
+        distanceKm,
+        score,
+        nameA,
+        nameB,
+        lang: (langSelect && langSelect.value) || 'fr'
+      };
+      const res = await fetch(PROXY_GEMINI_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error('proxy_failed');
+      const data = await res.json();
+      if (!data || !data.messages) throw new Error('bad_proxy_payload');
+      return data.messages;
+    }
+
+    async function generateViaGeminiDirect({ h, f, distanceKm, score, nameA, nameB }) {
+      if (!DEMO_GEMINI_API_KEY) {
+        const maybe = prompt('Mode démo: colle une clé API Gemini temporaire. Elle ne sera PAS sauvegardée.');
+        if (!maybe) throw new Error('no_demo_key');
+        DEMO_GEMINI_API_KEY = maybe.trim();
+      }
+      const sys = 'Tu es un assistant qui écrit des messages romantiques courts, mignons et variés. Garde un ton chaleureux, pas trop long.';
+      const promptFr = `Crée un court message romantique en français pour ${nameA} (${h.flag} ${h.name}) et ${nameB} (${f.flag} ${f.name}). Distance: ${Math.round(distanceKm)} km. Score: ${score}/100.`;
+      const promptDjLat = `En darija (latin), une variante courte et mignonne pour ${nameA} (${h.flag}) et ${nameB} (${f.flag}).`;
+      const promptDjAr = `بالدارجة المغربية (العربية)، رسالة قصيرة وجميلة لـ ${nameA} (${h.flag}) و ${nameB} (${f.flag}).`;
+
+      const contents = [
+        { role: 'user', parts: [{ text: sys + '\n' + promptFr }] },
+        { role: 'user', parts: [{ text: promptDjLat }] },
+        { role: 'user', parts: [{ text: promptDjAr }] }
+      ];
+
+      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + encodeURIComponent(DEMO_GEMINI_API_KEY), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents })
+      });
+      if (!res.ok) throw new Error('gemini_direct_failed');
+      const data = await res.json();
+      const text = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text) || '';
+
+      // Try to split 3 lines; otherwise reuse local composer for structure
+      const lines = text.split(/\n+/).filter(Boolean);
+      const fallback = composeMessages({ h, f, distanceKm, score, nameA, nameB });
+      return {
+        fr: lines[0] || fallback.fr,
+        darija_lat: lines[1] || fallback.darija_lat,
+        darija_ar: lines[2] || fallback.darija_ar
+      };
+    }
+
+    async function generateMessage() {
       const h = getCountry(selectH.value);
       const f = getCountry(selectF.value);
       const { distanceKm, score } = computeCompatibility(h, f, `${nameH.value}|${nameF.value}`);
@@ -891,7 +952,23 @@
       const nameA = nameH.value || 'Adam';
       const nameB = nameF.value || 'Eva';
 
-      const messages = composeMessages({ h, f, distanceKm, score, nameA, nameB });
+      // Try server proxy (no API key on client)
+      let messages = null;
+      try {
+        messages = await generateViaProxy({ h, f, distanceKm, score, nameA, nameB });
+      } catch (_) {}
+
+      // If proxy unavailable, try demo mode (prompt for temporary key, not saved)
+      if (!messages) {
+        try {
+          messages = await generateViaGeminiDirect({ h, f, distanceKm, score, nameA, nameB });
+        } catch (_) {}
+      }
+
+      // Fallback to local templates if all else fails
+      if (!messages) {
+        messages = composeMessages({ h, f, distanceKm, score, nameA, nameB });
+      }
 
       const choice = (langSelect && langSelect.value) ? langSelect.value : 'fr';
       let html = '';
