@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Amour à travers le monde — Jeu simple</title>
+  <style>
+    :root {
+      --bg: #0f172a;            /* slate-900 */
+      --panel: #111827;         /* gray-900 */
+      --muted: #94a3b8;         /* slate-400 */
+      --ink: #e5e7eb;           /* gray-200 */
+      --accent: #f472b6;        /* pink-400 */
+      --accent-2: #38bdf8;      /* sky-400 */
+      --good: #34d399;          /* emerald-400 */
+      --warn: #fbbf24;          /* amber-400 */
+      --bad: #fb7185;           /* rose-400 */
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+
+    body {
+      margin: 0;
+      background: radial-gradient(1000px 600px at 70% -10%, #1f2937 0%, var(--bg) 60%);
+      color: var(--ink);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Ubuntu, Cantarell, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+
+    .wrap {
+      max-width: 980px;
+      margin: 24px auto;
+      padding: 0 16px 48px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      margin: 0;
+    }
+
+    header .hint { color: var(--muted); font-size: 13px; }
+
+    .panel {
+      background: linear-gradient(180deg, #0b1220 0%, #0d1220 100%);
+      border: 1px solid rgba(148,163,184,0.15);
+      border-radius: 14px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03);
+      padding: 14px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    @media (min-width: 880px) {
+      .grid {
+        grid-template-columns: 1.1fr 1fr;
+      }
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    label { font-size: 12px; color: var(--muted); }
+
+    input[type="text"], select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(148,163,184,0.18);
+      background: #0b1220;
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.15s ease;
+      font-size: 14px;
+    }
+
+    input[type="text"]:focus, select:focus { border-color: var(--accent-2); }
+
+    .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+    button {
+      appearance: none;
+      border: none;
+      background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+      color: var(--ink);
+      border: 1px solid rgba(148,163,184,0.18);
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      cursor: pointer;
+      transition: transform 0.06s ease, border-color 0.15s ease;
+    }
+
+    button:hover { border-color: var(--accent-2); }
+    button:active { transform: translateY(1px); }
+
+    .btn-accent { border-color: rgba(244,114,182,0.45); background: linear-gradient(180deg, #312e81 0%, #111827 100%); }
+
+    .note { font-size: 13px; color: var(--muted); }
+
+    .canvas-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 2 / 1; /* world aspect */
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(148,163,184,0.18);
+      background: linear-gradient(180deg, #0b1220 0%, #0a1020 100%);
+    }
+
+    canvas { width: 100%; height: 100%; display: block; }
+
+    .score-line {
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    .score-line strong { color: var(--good); }
+
+    .out {
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(148,163,184,0.18);
+      background: #0b1220;
+      min-height: 64px;
+      white-space: pre-wrap;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.18);
+      background: #0b1220;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .switch {
+      display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; color: var(--muted);
+    }
+    .switch input { width: 18px; height: 18px; }
+
+    .legend { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; color: var(--muted); font-size: 12px; margin-top: 8px; }
+    .legend .key { display: inline-flex; align-items: center; gap: 6px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .dot.homme { background: var(--accent-2); box-shadow: 0 0 0 2px rgba(56,189,248,0.25); }
+    .dot.femme { background: var(--accent); box-shadow: 0 0 0 2px rgba(244,114,182,0.25); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Amour à travers le monde 🌍💘</h1>
+      <div class="hint">Fichier unique, fonctionne hors-ligne. iPad friendly.</div>
+    </header>
+
+    <div class="grid">
+      <section class="panel">
+        <div class="row">
+          <div class="field">
+            <label>Nom (homme)</label>
+            <input id="nameH" type="text" placeholder="Adam" value="Adam" />
+          </div>
+          <div class="field">
+            <label>Pays (homme)</label>
+            <select id="countryH"></select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Nom (femme)</label>
+            <input id="nameF" type="text" placeholder="Eva" value="Eva" />
+          </div>
+          <div class="field">
+            <label>Pays (femme)</label>
+            <select id="countryF"></select>
+          </div>
+        </div>
+
+        <div class="controls" style="margin-top: 6px;">
+          <label class="switch"><input id="darija" type="checkbox" /> Inclure une version en darija</label>
+          <span class="pill">Conseil: tu peux zoomer avec deux doigts sur iPad</span>
+        </div>
+
+        <div class="controls" style="margin-top: 12px;">
+          <button id="btnUpdate" class="btn-accent">Mettre à jour la carte</button>
+          <button id="btnMsg">Générer un message mignon 💌</button>
+          <button id="btnCopy">Copier le message</button>
+        </div>
+
+        <div id="scoreLine" class="score-line"></div>
+      </section>
+
+      <section class="panel">
+        <div class="canvas-wrap">
+          <canvas id="map" width="1000" height="500" aria-label="Carte du monde"></canvas>
+        </div>
+        <div class="legend">
+          <span class="key"><span class="dot homme"></span> Homme</span>
+          <span class="key"><span class="dot femme"></span> Femme</span>
+          <span class="key">Grille: 30° lat/lon</span>
+        </div>
+      </section>
+    </div>
+
+    <section class="panel" style="margin-top: 12px;">
+      <div id="out" class="out">Le message apparaîtra ici.</div>
+    </section>
+  </div>
+
+  <script>
+    // Minimal list of countries with emoji flags, approximate centroids
+    const COUNTRIES = [
+      { code: 'FR', name: 'France', flag: '🇫🇷', lat: 46.2276, lon: 2.2137, continent: 'Europe', francophone: true },
+      { code: 'MA', name: 'Maroc', flag: '🇲🇦', lat: 31.7917, lon: -7.0926, continent: 'Afrique', francophone: true },
+      { code: 'DZ', name: 'Algérie', flag: '🇩🇿', lat: 28.0339, lon: 1.6596, continent: 'Afrique', francophone: true },
+      { code: 'TN', name: 'Tunisie', flag: '🇹🇳', lat: 33.8869, lon: 9.5375, continent: 'Afrique', francophone: true },
+      { code: 'SN', name: 'Sénégal', flag: '🇸🇳', lat: 14.4974, lon: -14.4524, continent: 'Afrique', francophone: true },
+      { code: 'CI', name: "Côte d'Ivoire", flag: '🇨🇮', lat: 7.54, lon: -5.5471, continent: 'Afrique', francophone: true },
+      { code: 'ES', name: 'Espagne', flag: '🇪🇸', lat: 40.4637, lon: -3.7492, continent: 'Europe', francophone: false },
+      { code: 'IT', name: 'Italie', flag: '🇮🇹', lat: 41.8719, lon: 12.5674, continent: 'Europe', francophone: false },
+      { code: 'DE', name: 'Allemagne', flag: '🇩🇪', lat: 51.1657, lon: 10.4515, continent: 'Europe', francophone: false },
+      { code: 'BE', name: 'Belgique', flag: '🇧🇪', lat: 50.5039, lon: 4.4699, continent: 'Europe', francophone: true },
+      { code: 'CH', name: 'Suisse', flag: '🇨🇭', lat: 46.8182, lon: 8.2275, continent: 'Europe', francophone: true },
+      { code: 'CA', name: 'Canada', flag: '🇨🇦', lat: 56.1304, lon: -106.3468, continent: 'Amériques', francophone: true },
+      { code: 'US', name: 'États-Unis', flag: '🇺🇸', lat: 37.0902, lon: -95.7129, continent: 'Amériques', francophone: false },
+      { code: 'BR', name: 'Brésil', flag: '🇧🇷', lat: -14.2350, lon: -51.9253, continent: 'Amériques', francophone: false },
+      { code: 'AR', name: 'Argentine', flag: '🇦🇷', lat: -38.4161, lon: -63.6167, continent: 'Amériques', francophone: false },
+      { code: 'GB', name: 'Royaume-Uni', flag: '🇬🇧', lat: 55.3781, lon: -3.4360, continent: 'Europe', francophone: false },
+      { code: 'PT', name: 'Portugal', flag: '🇵🇹', lat: 39.3999, lon: -8.2245, continent: 'Europe', francophone: false },
+      { code: 'EG', name: 'Égypte', flag: '🇪🇬', lat: 26.8206, lon: 30.8025, continent: 'Afrique', francophone: false },
+      { code: 'TR', name: 'Turquie', flag: '🇹🇷', lat: 38.9637, lon: 35.2433, continent: 'Asie', francophone: false },
+      { code: 'SA', name: 'Arabie saoudite', flag: '🇸🇦', lat: 23.8859, lon: 45.0792, continent: 'Asie', francophone: false },
+      { code: 'AE', name: 'Émirats arabes unis', flag: '🇦🇪', lat: 23.4241, lon: 53.8478, continent: 'Asie', francophone: false },
+      { code: 'JP', name: 'Japon', flag: '🇯🇵', lat: 36.2048, lon: 138.2529, continent: 'Asie', francophone: false },
+      { code: 'CN', name: 'Chine', flag: '🇨🇳', lat: 35.8617, lon: 104.1954, continent: 'Asie', francophone: false },
+      { code: 'IN', name: 'Inde', flag: '🇮🇳', lat: 20.5937, lon: 78.9629, continent: 'Asie', francophone: false },
+    ];
+
+    const $ = (sel) => document.querySelector(sel);
+
+    const nameH = $('#nameH');
+    const nameF = $('#nameF');
+    const selectH = $('#countryH');
+    const selectF = $('#countryF');
+    const checkboxDarija = $('#darija');
+    const btnUpdate = $('#btnUpdate');
+    const btnMsg = $('#btnMsg');
+    const btnCopy = $('#btnCopy');
+    const scoreLine = $('#scoreLine');
+    const out = $('#out');
+
+    const canvas = document.getElementById('map');
+    const ctx = canvas.getContext('2d');
+
+    function populateSelects() {
+      const options = COUNTRIES.map(c => `<option value="${c.code}">${c.flag} ${c.name}</option>`).join('');
+      selectH.innerHTML = options;
+      selectF.innerHTML = options;
+      // Defaults
+      selectH.value = 'FR';
+      selectF.value = 'MA';
+    }
+
+    function getCountry(code) { return COUNTRIES.find(c => c.code === code); }
+
+    function resizeCanvasToContainer() {
+      const parent = canvas.parentElement;
+      const cssWidth = parent.clientWidth;
+      const cssHeight = cssWidth / 2; // 2:1 aspect
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.style.width = cssWidth + 'px';
+      canvas.style.height = cssHeight + 'px';
+      canvas.width = Math.floor(cssWidth * dpr);
+      canvas.height = Math.floor(cssHeight * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function lonLatToXY(lon, lat) {
+      // Equirectangular projection
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      const x = (lon + 180) / 360 * w;
+      const y = (90 - lat) / 180 * h;
+      return { x, y };
+    }
+
+    function drawBackground() {
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      // Ocean background
+      const grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, '#0a1a2f');
+      grad.addColorStop(1, '#071426');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+
+      // Subtle stars
+      ctx.save();
+      ctx.globalAlpha = 0.25;
+      ctx.fillStyle = '#94a3b8';
+      for (let i = 0; i < 80; i++) {
+        const x = Math.random() * w;
+        const y = Math.random() * h;
+        const r = Math.random() * 0.8 + 0.2;
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
+
+      // Graticule every 30°
+      ctx.save();
+      ctx.strokeStyle = 'rgba(148,163,184,0.22)';
+      ctx.lineWidth = 1;
+      for (let lon = -180; lon <= 180; lon += 30) {
+        const { x } = lonLatToXY(lon, 0);
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      for (let lat = -90; lat <= 90; lat += 30) {
+        const { y } = lonLatToXY(0, lat);
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+      // Equator & Greenwich
+      ctx.strokeStyle = 'rgba(56,189,248,0.45)';
+      ctx.lineWidth = 1.5;
+      let p = lonLatToXY(0, 0); ctx.beginPath(); ctx.moveTo(0, p.y); ctx.lineTo(w, p.y); ctx.stroke();
+      p = lonLatToXY(0, 0); ctx.beginPath(); ctx.moveTo(p.x, 0); ctx.lineTo(p.x, h); ctx.stroke();
+      ctx.restore();
+
+      // Soft vignette
+      const g2 = ctx.createRadialGradient(w * 0.5, h * 0.5, Math.min(w, h) * 0.2, w * 0.5, h * 0.5, Math.max(w, h) * 0.7);
+      g2.addColorStop(0, 'rgba(0,0,0,0)');
+      g2.addColorStop(1, 'rgba(0,0,0,0.33)');
+      ctx.fillStyle = g2;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    function drawAvatar(point, type, label, flag) {
+      const isHomme = type === 'homme';
+      const color = isHomme ? '#38bdf8' : '#f472b6';
+      const bg = isHomme ? 'rgba(56,189,248,0.15)' : 'rgba(244,114,182,0.15)';
+      const emoji = isHomme ? '👨' : '👩';
+      const r = 18;
+
+      // Glow
+      ctx.save();
+      ctx.fillStyle = bg;
+      ctx.beginPath(); ctx.arc(point.x, point.y, r + 10, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+
+      // Dot
+      ctx.beginPath();
+      ctx.fillStyle = color;
+      ctx.arc(point.x, point.y, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Emoji label
+      ctx.font = '20px system-ui, Apple Color Emoji, Segoe UI Emoji';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#e5e7eb';
+      ctx.fillText(`${emoji} ${label} ${flag}`, point.x + 10, point.y);
+    }
+
+    function drawArc(a, b) {
+      // Curved connection
+      const midX = (a.x + b.x) / 2;
+      const midY = (a.y + b.y) / 2;
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const dist = Math.hypot(dx, dy);
+      const nx = -dy / (dist || 1);
+      const ny = dx / (dist || 1);
+      const bulge = Math.min(140, 20 + dist * 0.15);
+      const cx = midX + nx * bulge;
+      const cy = midY + ny * bulge;
+
+      const grad = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+      grad.addColorStop(0, 'rgba(56,189,248,0.9)');
+      grad.addColorStop(1, 'rgba(244,114,182,0.9)');
+
+      ctx.save();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.quadraticCurveTo(cx, cy, b.x, b.y);
+      ctx.stroke();
+
+      // Hearts along the path
+      ctx.font = '18px system-ui, Apple Color Emoji, Segoe UI Emoji';
+      ctx.fillStyle = '#fda4af';
+      for (let t of [0.25, 0.5, 0.75]) {
+        const x = (1 - t) * (1 - t) * a.x + 2 * (1 - t) * t * cx + t * t * b.x;
+        const y = (1 - t) * (1 - t) * a.y + 2 * (1 - t) * t * cy + t * t * b.y;
+        ctx.fillText('❤', x - 8, y - 8);
+      }
+      ctx.restore();
+    }
+
+    // Haversine distance in km
+    function haversineKm(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const toRad = (d) => d * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+    function seededNoise(str) {
+      // Simple deterministic pseudo-random based on string
+      let h = 2166136261 >>> 0;
+      for (let i = 0; i < str.length; i++) {
+        h ^= str.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      // Map to [-1, 1]
+      return (h % 2000) / 1000 - 1;
+    }
+
+    function computeCompatibility(a, b, namesKey) {
+      const distanceKm = haversineKm(a.lat, a.lon, b.lat, b.lon);
+      let base = 100 - (distanceKm / 200); // -1 per 200 km
+      let bonus = 0;
+      if (a.francophone && b.francophone) bonus += 10;
+      if (a.continent === b.continent) bonus += 5;
+      bonus += seededNoise(namesKey) * 5; // ±5 stable by names
+      const score = Math.round(clamp(base + bonus, 5, 99));
+      return { distanceKm, score, bonus: Math.round(bonus) };
+    }
+
+    function formatKm(km) {
+      return km < 1000 ? `${Math.round(km)} km` : `${(km/1000).toFixed(1)}k km`;
+    }
+
+    function drawAll() {
+      resizeCanvasToContainer();
+      drawBackground();
+
+      const h = getCountry(selectH.value);
+      const f = getCountry(selectF.value);
+      const pH = lonLatToXY(h.lon, h.lat);
+      const pF = lonLatToXY(f.lon, f.lat);
+
+      drawArc(pH, pF);
+      drawAvatar(pH, 'homme', nameH.value || 'Homme', h.flag);
+      drawAvatar(pF, 'femme', nameF.value || 'Femme', f.flag);
+
+      const { distanceKm, score, bonus } = computeCompatibility(h, f, `${nameH.value}|${nameF.value}`);
+      scoreLine.innerHTML = `Distance: <strong>${formatKm(distanceKm)}</strong> · Compatibilité: <strong>${score}/100</strong> ${bonus !== 0 ? `(bonus ${bonus >= 0 ? '+' : ''}${bonus})` : ''}`;
+    }
+
+    function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+    function generateMessage() {
+      const h = getCountry(selectH.value);
+      const f = getCountry(selectF.value);
+      const { distanceKm, score } = computeCompatibility(h, f, `${nameH.value}|${nameF.value}`);
+
+      const nouns = ['destins', 'étoiles', 'voyages', 'rêves', 'sourires', 'chansons', 'silences'];
+      const verbs = ['se cherchent', 'se trouvent', 'se répondent', 'se chuchotent', 'se reconnaissent'];
+      const adjs = ['doucement', 'fort', 'simplement', 'à l’infini', 'sans bruit'];
+      const hearts = ['💞', '💖', '💗', '💘', '💝'];
+
+      const nameA = nameH.value || 'Adam';
+      const nameB = nameF.value || 'Eva';
+
+      const baseFr = [
+        `${nameA} (${h.flag} ${h.name}) et ${nameB} (${f.flag} ${f.name}) sont séparés par ${formatKm(distanceKm)}, mais leurs cœurs n’ont pas de frontières. Compatibilité: ${score}/100 ${pick(hearts)}`,
+        `Entre ${nameA} et ${nameB}, les ${pick(nouns)} ${pick(verbs)} ${pick(adjs)}. ${h.flag}+${f.flag} → ${score}/100 ${pick(hearts)}`,
+        `${nameA} rencontre ${nameB} à mi-chemin du monde. Distance: ${formatKm(distanceKm)} · Score: ${score}/100 ${pick(hearts)}`,
+      ];
+
+      let msg = pick(baseFr);
+
+      if (checkboxDarija.checked) {
+        const baseDj = [
+          `${nameA} w ${nameB} b3id bainathom ${formatKm(distanceKm)}, walakin l9loub ma 3and-homch hdoud. N9ta: ${score}/100 ${pick(hearts)}`,
+          `${nameA} w ${nameB} ktla9aw f nos d-dnya. L-b3d ghyr r9m, w l-hob kayrba7. N9ta: ${score}/100 ${pick(hearts)}`,
+          `Ben ${h.flag} w ${f.flag}, ${nameA} w ${nameB} kayqtarbo b l-hob. ${score}/100 ${pick(hearts)}`,
+        ];
+        msg += `\n\n— Darija —\n` + pick(baseDj);
+      }
+
+      out.textContent = msg;
+    }
+
+    function copyMessage() {
+      const text = out.textContent.trim();
+      if (!text) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          out.textContent = text + "\n\n(Copié dans le presse-papiers ✅)";
+        }).catch(() => fallbackCopy(text));
+      } else { fallbackCopy(text); }
+
+      function fallbackCopy(t) {
+        const ta = document.createElement('textarea');
+        ta.value = t; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+    }
+
+    // Init
+    populateSelects();
+    window.addEventListener('resize', drawAll);
+    btnUpdate.addEventListener('click', drawAll);
+    [selectH, selectF, nameH, nameF].forEach(el => el.addEventListener('change', drawAll));
+    btnMsg.addEventListener('click', generateMessage);
+    btnCopy.addEventListener('click', copyMessage);
+
+    // First paint
+    drawAll();
+  </script>
+</body>
+</html>
