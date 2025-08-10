@@ -78,6 +78,9 @@
     }
 
     .field { display: flex; flex-direction: column; gap: 6px; }
+    .ai-input { display: flex; gap: 8px; }
+    .ai-input input { flex: 1; }
+    .ai-input button { white-space: nowrap; }
     label { font-size: 12px; color: var(--muted); }
 
     input[type="text"], select {
@@ -194,7 +197,10 @@
         <div class="row">
           <div class="field">
             <label>Nom (homme)</label>
-            <input id="nameH" type="text" placeholder="Adam" value="Adam" />
+            <div class="ai-input">
+              <input id="nameH" type="text" placeholder="Adam" value="Adam" />
+              <button type="button" id="genNameH">Générer un prénom AI ✨</button>
+            </div>
           </div>
           <div class="field">
             <label>Pays (homme)</label>
@@ -204,7 +210,10 @@
         <div class="row">
           <div class="field">
             <label>Nom (femme)</label>
-            <input id="nameF" type="text" placeholder="Eva" value="Eva" />
+            <div class="ai-input">
+              <input id="nameF" type="text" placeholder="Eva" value="Eva" />
+              <button type="button" id="genNameF">Générer un prénom AI ✨</button>
+            </div>
           </div>
           <div class="field">
             <label>Pays (femme)</label>
@@ -306,6 +315,17 @@
       { code: 'IN', name: 'Inde', flag: '🇮🇳', lat: 20.5937, lon: 78.9629, continent: 'Asie', francophone: false },
     ];
 
+    const LOCAL_NAMES = {
+      default: {
+        male: ['Adam', 'Youssef', 'Karim'],
+        female: ['Eva', 'Sara', 'Lina']
+      },
+      FR: { male: ['Jean', 'Louis', 'Hugo'], female: ['Marie', 'Emma', 'Chloé'] },
+      MA: { male: ['Youssef', 'Omar', 'Karim'], female: ['Sara', 'Lina', 'Nadia'] },
+      DZ: { male: ['Ahmed', 'Rachid', 'Samir'], female: ['Amel', 'Leila', 'Kenza'] },
+      TN: { male: ['Anis', 'Fares', 'Sami'], female: ['Meriem', 'Nesrine', 'Ines'] }
+    };
+
     const $ = (sel) => document.querySelector(sel);
 
     const nameH = $('#nameH');
@@ -324,6 +344,8 @@
      const btnUpdate = $('#btnUpdate');
      const btnMsg = $('#btnMsg');
      const btnCopy = $('#btnCopy');
+     const btnNameH = $('#genNameH');
+     const btnNameF = $('#genNameF');
      const scoreLine = $('#scoreLine');
      const out = $('#out');
            const btnDownload = $('#btnDownload');
@@ -944,6 +966,36 @@
       };
     }
 
+    async function generateAIName(gender, country) {
+      const textPrompt = `Propose un prénom ${gender === 'male' ? 'masculin' : 'féminin'} populaire ${country ? 'au ' + country.name : ''}. Réponds uniquement par le prénom.`;
+      try {
+        if (!DEMO_GEMINI_API_KEY) {
+          const maybe = window.prompt('Entrez une clé API Gemini (non sauvegardée):');
+          if (!maybe) throw new Error('no_key');
+          DEMO_GEMINI_API_KEY = maybe.trim();
+        }
+        const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + encodeURIComponent(DEMO_GEMINI_API_KEY), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: textPrompt }] }] })
+        });
+        if (!res.ok) throw new Error('gemini_direct_failed');
+        const data = await res.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        if (text) return text.split(/[\s,]+/)[0];
+      } catch (_) {}
+      const list = (LOCAL_NAMES[country?.code] && LOCAL_NAMES[country.code][gender]) || LOCAL_NAMES.default[gender];
+      return list[Math.floor(Math.random() * list.length)];
+    }
+
+    async function handleGenName(gender) {
+      const sel = gender === 'male' ? selectH : selectF;
+      const input = gender === 'male' ? nameH : nameF;
+      const country = getCountry(sel.value);
+      const name = await generateAIName(gender, country);
+      if (name) { input.value = name; drawAll(); }
+    }
+
     async function generateMessage() {
       const h = getCountry(selectH.value);
       const f = getCountry(selectF.value);
@@ -1024,6 +1076,8 @@
     window.addEventListener('resize', drawAll);
     btnUpdate.addEventListener('click', drawAll);
     [selectH, selectF, nameH, nameF].forEach(el => el.addEventListener('change', drawAll));
+    if (btnNameH) btnNameH.addEventListener('click', () => handleGenName('male'));
+    if (btnNameF) btnNameF.addEventListener('click', () => handleGenName('female'));
     btnMsg.addEventListener('click', generateMessage);
     btnCopy.addEventListener('click', copyMessage);
     if (btnDownload) btnDownload.addEventListener('click', downloadImage);
